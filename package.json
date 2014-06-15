@@ -1,0 +1,31 @@
+{
+  "name": "backside-client",
+  "version": "0.0.0",
+  "description": "Javascript client for interacting with Backside backend as a service.",
+  "main": "index.js",
+  "scripts": {
+    "test": "",
+    "watch": "http-server & watchify index.js --s Backside -d -o backside-debug.js",
+    "build": "browserify index.js --s Backside -d > backside-debug.js; uglifyjs backside-debug.js > backside.min.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/backside/backside-client.git"
+  },
+  "author": "Trevor Dixon",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/backside/backside-client/issues"
+  },
+  "homepage": "https://github.com/backside/backside-client",
+  "devDependencies": {
+    "browserify": "^4.1.8",
+    "http-server": "^0.6.1",
+    "uglify-js": "^2.4.13",
+    "watchify": "^0.10.2"
+  },
+  "dependencies": {
+    "cuid": "^1.2.4",
+    "stompjs": "git://github.com/jmesnil/stomp-websocket"
+  }
+}
