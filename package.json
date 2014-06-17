@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "",
-    "watch": "mkdir -p dist && http-server & NODE_ENV=development watchify index.js --s Backside -t envify -d -o dist/backside-debug.js",
-    "build": "mkdir -p dist && NODE_ENV=production browserify index.js --s Backside -t envify -o dist/backside.js && NODE_ENV=production browserify index.js --s Backside -t envify -g uglifyify -o dist/backside.min.js"
+    "watch": "mkdir -p dist && http-server & NODE_ENV=development watchify --detect-globals false index.js --s Backside -t envify -d -o dist/backside-debug.js",
+    "build": "mkdir -p dist && NODE_ENV=production browserify --detect-globals false index.js --s Backside -t envify -o dist/backside.js && NODE_ENV=production browserify --detect-globals index.js --s Backside -t envify -g uglifyify -o dist/backside.min.js"
   },
   "repository": {
     "type": "git",
