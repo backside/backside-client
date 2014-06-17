@@ -323,7 +323,8 @@ module.exports = {
 function _collapseTree(tree, collapsed) {
   for(var key in tree) {
     var val = tree[key]
-    if (typeof val.value !== "object") {
+    if (val === null) {
+    } else if (typeof val.value !== "object") {
       collapsed[key] = val.value
     } else {
       collapsed[key] = {}
@@ -340,8 +341,10 @@ module.exports = function collapseTree(tree) {
   if (tree.value && typeof tree.value !== "object") return tree.value
   var collapsed = {}
   _collapseTree(tree, collapsed)
+  if (Object.keys(collapsed).length === 0) return null
   return collapsed
 }
+
 },{}],9:[function(_dereq_,module,exports){
 /*! http://mths.be/punycode v1.2.4 by @mathias */
 ;(function(root) {
