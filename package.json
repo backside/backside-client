@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "",
-    "watch": "http-server & watchify index.js --s Backside -d -o backside-debug.js",
-    "build": "browserify index.js --s Backside -d > backside-debug.js; uglifyjs backside-debug.js > backside.min.js"
+    "watch": "mkdir -p dist && http-server & NODE_ENV=development watchify index.js --s Backside -t envify -d -o dist/backside-debug.js",
+    "build": "mkdir -p dist && NODE_ENV=production browserify index.js --s Backside -t envify -o dist/backside.js && NODE_ENV=production browserify index.js --s Backside -t envify -g uglifyify -o dist/backside.min.js"
   },
   "repository": {
     "type": "git",
@@ -20,8 +20,9 @@
   "homepage": "https://github.com/backside/backside-client",
   "devDependencies": {
     "browserify": "^4.1.8",
+    "envify": "^2.0.0",
     "http-server": "^0.6.1",
-    "uglify-js": "^2.4.13",
+    "uglifyify": "^2.4.0",
     "watchify": "^0.10.2"
   },
   "dependencies": {
