@@ -28,6 +28,6 @@
   "dependencies": {
     "backside-utils": "0.0.2",
     "cuid": "^1.2.4",
-    "stompjs": "git://github.com/jmesnil/stomp-websocket"
+    "stompjs": "^2.3.2"
   }
 }
