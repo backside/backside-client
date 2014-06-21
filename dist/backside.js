@@ -114,11 +114,10 @@ Backside.prototype._onUpdate = function _onUpdate(message) {
       start = start[p];
     }
     start[relativePath[relativePath.length-1]] = {value: update.message.value};
+    this._data = start;
   } else {
     this._data = update.message;
   }
-
-  console.log('data', this._data);
 
   var name = this._pathArray[this._pathArray.length-1] || null;
   
