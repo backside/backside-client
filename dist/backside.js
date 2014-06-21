@@ -113,7 +113,13 @@ Backside.prototype._onUpdate = function _onUpdate(message) {
       start[p] = start[p] || {};
       start = start[p];
     }
-    start[relativePath[relativePath.length-1]] = {value: update.message.value};
+
+    if (update.message == null) {
+      delete start[relativePath[relativePath.length-1]];
+    } else {
+      start[relativePath[relativePath.length-1]] = {value: update.message.value};
+    }
+
     this._data = start;
   } else {
     this._data = update.message;
