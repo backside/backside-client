@@ -46,7 +46,7 @@ var url = _dereq_('url');
 var ArraySet = _dereq_('./ArraySet');
 var util = _dereq_('./util');
 var connectionManager = _dereq_('./connectionManager');
-var DataSnapshot = _dereq_('./DataSnapshot');
+var DataStore = _dereq_('./DataStore');
 
 var validEvents = ['value'/*, 'child_added', 'child_removed', 'child_changed', 'child_moved'*/];
 var validEventErr = new Error('First argument must be a valid event type ("' + validEvents.join('", "') + '").');
@@ -54,8 +54,6 @@ var validEventErr = new Error('First argument must be a valid event type ("' + v
 function pathSplit(path) { return path.split('/').filter(function(p) { return p.length > 0; }); }
 
 function Backside(clientOrUrl, path) {
-  this._data = {};
-
   if (util.isString(clientOrUrl)) {
     var urlInfo = url.parse(clientOrUrl);
     path = urlInfo.pathname || '/';
@@ -73,6 +71,7 @@ function Backside(clientOrUrl, path) {
   }
     
   this._path = '/' + this._pathArray.join('/');
+  this._name = this._pathArray[this._pathArray.length-1] || null;
 }
 
 Backside.prototype.child = function(relativePath) {
@@ -93,6 +92,7 @@ Backside.prototype._subscribeIfNecessary = function _subscribeIfNecessary() {
     return;
   }
 
+  this._data = new DataStore(this._name);
   this._listeners = {};
 
   for (var i = validEvents.length - 1; i >= 0; i--) {
@@ -106,28 +106,13 @@ Backside.prototype._onUpdate = function _onUpdate(message) {
   var update = JSON.parse(message.body);
   var relativePath = pathSplit(update.key).slice(this._pathArray.length);
 
-  if (relativePath.length) {
-    var start = this._data || {};
-    for (var i = 0; i < relativePath.length-2; i++) {
-      var p = relativePath[i];
-      start[p] = start[p] || {};
-      start = start[p];
-    }
-
-    if (update.message == null) {
-      delete start[relativePath[relativePath.length-1]];
-    } else {
-      start[relativePath[relativePath.length-1]] = {value: update.message.value};
-    }
-
-    this._data = start;
+  if (update.message == null) {
+    this._data.remove(relativePath);
   } else {
-    this._data = update.message;
+    this._data.set(relativePath, update.message);
   }
 
-  var name = this._pathArray[this._pathArray.length-1] || null;
-  
-  this._fire('value', new DataSnapshot(this._data, name));
+  this._fire('value', this._data.snapshot());
 };
 
 /* TODO: Add optional cancelCallback and context parameters */
@@ -196,7 +181,7 @@ update
 */
 
 module.exports = Backside;
-},{"./ArraySet":2,"./DataSnapshot":5,"./connectionManager":6,"./util":7,"url":13}],4:[function(_dereq_,module,exports){
+},{"./ArraySet":2,"./DataStore":6,"./connectionManager":7,"./util":8,"url":14}],4:[function(_dereq_,module,exports){
 'use strict';
 
 var Q = _dereq_('q');
@@ -233,7 +218,7 @@ Connection.prototype.send = function send(path, val) {
 };
 
 module.exports = Connection;
-},{"q":14,"stompjs/lib/stomp":15}],5:[function(_dereq_,module,exports){
+},{"q":15,"stompjs/lib/stomp":16}],5:[function(_dereq_,module,exports){
 'use strict';
 
 var collapseTree = _dereq_('backside-utils/lib/collapseTree');
@@ -285,7 +270,74 @@ DataSnapshot.prototype.exportVal = function exportVal() {
 
 
 module.exports = DataSnapshot;
-},{"backside-utils/lib/collapseTree":8}],6:[function(_dereq_,module,exports){
+},{"backside-utils/lib/collapseTree":9}],6:[function(_dereq_,module,exports){
+'use strict';
+
+var DataSnapshot = _dereq_('./DataSnapshot');
+
+function DataStore(name) {
+  this._data = null;
+  this._name = name;
+}
+
+DataStore.prototype.set = function set(path, value) {
+  if (!path.length) {
+    return this._setRoot(value);
+  }
+
+  var start = this._data || {};
+  for (var i = 0; i < path.length-2; i++) {
+    var p = path[i];
+    start[p] = start[p] || {};
+    start = start[p];
+  }
+
+  if (value == null) {
+    delete start[path[path.length-1]];
+  } else {
+    start[path[path.length-1]] = {value: value.value};
+  }
+
+  this._data = start;
+};
+
+DataStore.prototype.remove = function remove(path) {
+  this.set(path, null);
+};
+
+DataStore.prototype.snapshot = function snapshot() {
+  return new DataSnapshot(this._data, this._name);
+};
+
+DataStore.prototype._setRoot = function _setRoot(value) {
+  var old = this._data;
+  this._data = value;
+
+  var oldChildren = {};
+
+  for (var child in old) {
+    oldChildren[child] = true;
+  }
+
+  var newChildren = [];
+
+  for (child in value) {
+    if (!oldChildren[child]) {
+      newChildren.push(child);
+    } else {
+      delete oldChildren[child];
+    }
+  }
+
+  return {
+    removed: Object.keys(oldChildren),
+    added: newChildren
+  };
+
+};
+
+module.exports = DataStore;
+},{"./DataSnapshot":5}],7:[function(_dereq_,module,exports){
 'use strict';
 
 var Connection = _dereq_('./Connection');
@@ -310,7 +362,7 @@ module.exports = {
     return connections[url];
   }
 };
-},{"./Connection":4}],7:[function(_dereq_,module,exports){
+},{"./Connection":4}],8:[function(_dereq_,module,exports){
 'use strict';
 
 var ots = Object.prototype.toString;
@@ -326,7 +378,7 @@ module.exports = {
     return ots.call(o) === '[object Object]';
   }
 };
-},{}],8:[function(_dereq_,module,exports){
+},{}],9:[function(_dereq_,module,exports){
 function _collapseTree(tree, collapsed) {
   for(var key in tree) {
     var val = tree[key]
@@ -352,7 +404,7 @@ module.exports = function collapseTree(tree) {
   return collapsed
 }
 
-},{}],9:[function(_dereq_,module,exports){
+},{}],10:[function(_dereq_,module,exports){
 /*! http://mths.be/punycode v1.2.4 by @mathias */
 ;(function(root) {
 
@@ -861,7 +913,7 @@ module.exports = function collapseTree(tree) {
 
 }(this));
 
-},{}],10:[function(_dereq_,module,exports){
+},{}],11:[function(_dereq_,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -947,7 +999,7 @@ var isArray = Array.isArray || function (xs) {
   return Object.prototype.toString.call(xs) === '[object Array]';
 };
 
-},{}],11:[function(_dereq_,module,exports){
+},{}],12:[function(_dereq_,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -1034,13 +1086,13 @@ var objectKeys = Object.keys || function (obj) {
   return res;
 };
 
-},{}],12:[function(_dereq_,module,exports){
+},{}],13:[function(_dereq_,module,exports){
 'use strict';
 
 exports.decode = exports.parse = _dereq_('./decode');
 exports.encode = exports.stringify = _dereq_('./encode');
 
-},{"./decode":10,"./encode":11}],13:[function(_dereq_,module,exports){
+},{"./decode":11,"./encode":12}],14:[function(_dereq_,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -1749,7 +1801,7 @@ function isNullOrUndefined(arg) {
   return  arg == null;
 }
 
-},{"punycode":9,"querystring":12}],14:[function(_dereq_,module,exports){
+},{"punycode":10,"querystring":13}],15:[function(_dereq_,module,exports){
 // vim:ts=4:sts=4:sw=4:
 /*!
  *
@@ -3655,7 +3707,7 @@ return Q;
 
 });
 
-},{}],15:[function(_dereq_,module,exports){
+},{}],16:[function(_dereq_,module,exports){
 // Generated by CoffeeScript 1.7.1
 
 /*
